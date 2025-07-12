@@ -100,6 +100,13 @@ class _PayPalWebViewPaymentScreenState
           final snapshot = await transaction.get(bookingRef);
           if (!snapshot.exists) throw Exception("Booking not found.");
 
+          final userRef = FirebaseFirestore.instance
+              .collection('users')
+              .doc(snapshot['photographerId']); // 🔁 use snapshot data
+          final userSnap = await transaction.get(
+            userRef,
+          ); // ✅ read before write
+
           final data = snapshot.data()!;
           final List<dynamic> paymentHistory = List.from(
             data['partialPayment'] ?? [],
@@ -120,23 +127,18 @@ class _PayPalWebViewPaymentScreenState
             'receiptId': receiptId,
           });
 
+          final currentBalance = (userSnap.data()?['balance'] ?? 0).toDouble();
+          final newBalance = currentBalance + widget.amount;
+
+          // ✅ now safe to write
           transaction.update(bookingRef, {
             'partialPayment': paymentHistory,
             'isPaid': isFullyPaid,
             'status': isFullyPaid ? 'Completed' : data['status'],
           });
-
-          // Update photographer's balance
-          final userRef = FirebaseFirestore.instance
-              .collection('users')
-              .doc(data['photographerId']);
-          final userSnap = await transaction.get(userRef);
-          final currentBalance = (userSnap.data()?['balance'] ?? 0).toDouble();
-          final newBalance = currentBalance + widget.amount;
           transaction.update(userRef, {'balance': newBalance});
         });
 
-        // Create receipt after transaction
         await FirebaseFirestore.instance
             .collection('receipts')
             .doc(receiptId)
@@ -172,7 +174,6 @@ class _PayPalWebViewPaymentScreenState
         }
       }
     } else {
-      // Registration payment
       try {
         await FirebaseFirestore.instance
             .collection('users')

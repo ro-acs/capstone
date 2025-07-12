@@ -3,7 +3,7 @@ import 'dart:convert';
 
 class PayPalPaymentService {
   static const String backendEndpoint =
-      'https://your-server.com/create-paypal-payment'; // Replace this
+      'https://capstone.x10.mx/createpaypalorder'; // Replace this
 
   static Future<String?> getPayPalPaymentUrl({
     required String bookingId,
@@ -21,17 +21,14 @@ class PayPalPaymentService {
         }),
       );
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        return json['approvalUrl']; // URL to redirect to PayPal WebView
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['paypal_url'] != null) {
+        return data['paypal_url'];
       } else {
-        print(
-          "❌ PayPal backend error: ${response.statusCode} ${response.body}",
-        );
-        return null;
+        throw Exception('PayPal URL not received');
       }
     } catch (e) {
-      print("❌ Exception fetching PayPal URL: $e");
+      print('PayPal error: $e');
       return null;
     }
   }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'gcash_webview_payment.dart';
+import 'paypal_webview_payment.dart';
 import '/services/gcash_payment_service.dart';
+import '/services/paypal_payment_service.dart';
 
 class MakePaymentScreen extends StatefulWidget {
   final String bookingId;
@@ -134,15 +136,14 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
     setState(() => isSubmitting = true);
 
     try {
+      print('Payment Method: $selectedMethod');
       if (selectedMethod == 'GCash') {
         final url = await GCashPaymentService.getPaymentUrl(
           uid: widget.clientId,
           amountInCentavos: (amount * 100).round(),
         );
 
-        print('url: $url');
-
-        if (url != null && url.isNotEmpty) {
+        if (url.isNotEmpty) {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -158,8 +159,32 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
         } else {
           Fluttertoast.showToast(msg: "❌ Failed to initiate GCash payment.");
         }
+      } else if (selectedMethod == 'Paypal') {
+        final paypalUrl = await PayPalPaymentService.getPayPalPaymentUrl(
+          bookingId: widget.bookingId,
+          amount: amount,
+          note: note,
+        );
+
+        if (paypalUrl != null && paypalUrl.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PayPalWebViewPaymentScreen(
+                paymentUrl: paypalUrl,
+                contextType: 'booking',
+                referenceId: widget.bookingId,
+                uid: widget.clientId,
+                amount: amount,
+                note: note,
+              ),
+            ),
+          );
+        } else {
+          Fluttertoast.showToast(msg: "❌ Failed to initiate PayPal payment.");
+        }
       } else {
-        Fluttertoast.showToast(msg: "Unsupported payment method.");
+        Fluttertoast.showToast(msg: "Unsupported payment method used.");
       }
     } catch (e) {
       Fluttertoast.showToast(msg: "Error: ${e.toString()}");
