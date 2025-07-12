@@ -74,7 +74,11 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
         isPaid = true;
       }
 
-      if (isPaid) {
+      // 🔽 Default amount to 50% if no payment yet
+      if (history.isEmpty && !isPaid) {
+        final halfAmount = (finalPrice / 2).toStringAsFixed(2);
+        amountController.text = halfAmount;
+      } else if (isPaid) {
         amountController.text = remaining.toStringAsFixed(2);
       }
 
@@ -129,6 +133,15 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
     if (amount <= 0 || amount > remaining) {
       Fluttertoast.showToast(
         msg: "Amount must be between 1 and ₱${remaining.toStringAsFixed(2)}.",
+      );
+      return;
+    }
+
+    // 🔒 Enforce 50% minimum if this is the first payment
+    if (totalPaid == 0 && amount < finalPrice / 2) {
+      Fluttertoast.showToast(
+        msg:
+            "You must pay at least 50% (₱${(finalPrice / 2).toStringAsFixed(2)}) to proceed.",
       );
       return;
     }
@@ -236,12 +249,16 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
                         decimal: true,
                       ),
                       enabled: !isFullPayment,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: "Amount to Pay",
                         prefixText: "₱",
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
+                        helperText: totalPaid == 0
+                            ? "You are required to pay at least 50% (₱${(finalPrice / 2).toStringAsFixed(2)})"
+                            : null,
                       ),
                     ),
+
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: selectedMethod,
@@ -276,13 +293,13 @@ class _MakePaymentScreenState extends State<MakePaymentScreen> {
                         icon: const Icon(Icons.payment),
                         label: isSubmitting
                             ? const CircularProgressIndicator(
-                                color: Colors.white,
+                                color: Colors.black,
                               )
                             : const Text("Submit Payment"),
                         onPressed: isSubmitting ? null : submitPayment,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.all(16),
-                          backgroundColor: Colors.deepPurple,
+                          backgroundColor: Colors.white,
                         ),
                       ),
                     ),

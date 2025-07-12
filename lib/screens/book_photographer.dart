@@ -26,6 +26,9 @@ class _BookPhotographerScreenState extends State<BookPhotographerScreen> {
   TimeOfDay? _selectedTime;
   final _noteController = TextEditingController();
 
+  String _selectedPaymentMethod = 'GCash';
+  final List<String> _paymentMethods = ['GCash', 'PayPal'];
+
   @override
   void initState() {
     super.initState();
@@ -183,8 +186,8 @@ class _BookPhotographerScreenState extends State<BookPhotographerScreen> {
       0,
       double.infinity,
     );
+    final requiredDeposit = finalPrice * 0.5;
 
-    // ✅ Fetch photographer name
     final photographerDoc = await FirebaseFirestore.instance
         .collection('users')
         .doc(widget.photographerId)
@@ -193,17 +196,21 @@ class _BookPhotographerScreenState extends State<BookPhotographerScreen> {
 
     final doc = await FirebaseFirestore.instance.collection('bookings').add({
       'photographerId': widget.photographerId,
-      'photographerName': photographerName, // ✅ REQUIRED FOR DASHBOARD
+      'photographerName': photographerName,
       'clientId': userId,
       'serviceIds': _selectedServiceIds.toList(),
       'basePrice': _totalPrice,
       'discountAmount': _discountAmount,
       'finalPrice': finalPrice,
+      'partialPayment': [],
       'promoCode': _appliedPromoCode,
       'bookingDate': _selectedDate,
       'bookingTime': _selectedTime?.format(context),
       'note': _noteController.text.trim(),
-      'status': 'Pending', // optional: set default booking status
+      'status': 'Pending',
+      'isPaid': false,
+      'requiredDeposit': requiredDeposit,
+      'paymentMethod': _selectedPaymentMethod,
       'timestamp': FieldValue.serverTimestamp(),
     });
 
@@ -217,9 +224,13 @@ class _BookPhotographerScreenState extends State<BookPhotographerScreen> {
     }
 
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Booking confirmed!")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Booking confirmed! Please pay 50% to secure your booking.",
+        ),
+      ),
+    );
   }
 
   @override
@@ -264,6 +275,22 @@ class _BookPhotographerScreenState extends State<BookPhotographerScreen> {
                 secondary: Text('₱${s['price']}'),
               );
             }),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _selectedPaymentMethod,
+              items: _paymentMethods
+                  .map(
+                    (method) =>
+                        DropdownMenuItem(value: method, child: Text(method)),
+                  )
+                  .toList(),
+              onChanged: (val) =>
+                  setState(() => _selectedPaymentMethod = val ?? 'GCash'),
+              decoration: const InputDecoration(
+                labelText: 'Select Payment Method',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _promoController,
@@ -311,14 +338,26 @@ class _BookPhotographerScreenState extends State<BookPhotographerScreen> {
               "Total: ₱${finalPrice.toStringAsFixed(2)}",
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
+            Text(
+              "Required Deposit: ₱${(finalPrice * 0.5).toStringAsFixed(2)}",
+              style: const TextStyle(fontSize: 16, color: Colors.orange),
+            ),
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _bookNow,
-              child: const Text("Book Now"),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.deepPurple,
-                textStyle: const TextStyle(fontSize: 18),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _bookNow,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  "Book Now",
+                  style: TextStyle(color: Colors.black),
+                ),
               ),
             ),
           ],
