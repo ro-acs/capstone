@@ -1,3 +1,3 @@
-# snapshot
+# snapspot
 
 A new Flutter project.

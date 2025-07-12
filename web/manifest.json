@@ -1,6 +1,6 @@
 {
-    "name": "snapshot",
-    "short_name": "snapshot",
+    "name": "snapspot",
+    "short_name": "snapspot",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
