@@ -35,6 +35,7 @@ import 'screens/make_payment_screen.dart';
 import 'screens/payment_receipt_screen.dart';
 import 'screens/payment_history_screen.dart';
 import 'screens/confirm_payment_screen.dart';
+import 'screens/booking_detail.dart';
 
 import 'models/route_arguments.dart'; // ✅ import argument models
 
@@ -61,6 +62,12 @@ class SnapSpotApp extends StatelessWidget {
             builder: (_) => ReviewPhotographerScreen(
               photographerId: args['photographerId'],
             ),
+          );
+        }
+        if (settings.name == '/booking_detail') {
+          final bookingId = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (_) => BookingDetailScreen(bookingId: bookingId),
           );
         }
         if (settings.name == '/book_photographer') {
