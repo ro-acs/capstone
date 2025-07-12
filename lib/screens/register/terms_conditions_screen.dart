@@ -4,9 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import '../check_email_verification_screen.dart';
-import '../gcash_webview_payment.dart';
-import '../payment_success.dart';
 import '/services/gcash_payment_service.dart';
+import '/screens/paypal_webview_payment.dart';
+import '/screens/payment_success_screen.dart';
 
 class TermsConditionsScreen extends StatefulWidget {
   final String email;
@@ -91,7 +91,7 @@ class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
       });
 
       Fluttertoast.showToast(
-        msg: 'Verification email sent to ${user.email}. Please verify.',
+        msg: 'Verification email sent to \${user.email}. Please verify.',
       );
 
       if (widget.isPhotographer) {
@@ -121,23 +121,23 @@ class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
           } else {
             Fluttertoast.showToast(msg: "❌ Failed to create GCash link.");
           }
-        } else {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .update({
-                'isPaid': true,
-                'paymentMethod': 'PayPal',
-                'paidAt': Timestamp.now(),
-              });
-
+        } else if (selectedPaymentMethod == 'PayPal') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  const PaymentSuccessScreen(contextType: 'registration'),
+              builder: (_) => PayPalWebViewPaymentScreen(
+                paymentUrl:
+                    'https://yourserver.com/paypal-create?uid=${user.uid}&amount=${subscriptionPrice}',
+                contextType: 'registration',
+                referenceId: user.uid,
+                uid: user.uid,
+                amount: subscriptionPrice!.toDouble(),
+                note: 'Photographer registration payment',
+              ),
             ),
           );
+        } else {
+          Fluttertoast.showToast(msg: "Unsupported payment method selected.");
         }
       } else {
         Navigator.pushReplacement(
@@ -148,7 +148,7 @@ class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error: ${e.toString()}");
+      Fluttertoast.showToast(msg: "Error: \${e.toString()}");
     } finally {
       setState(() => isLoading = false);
     }
@@ -248,7 +248,7 @@ Failure to comply may result in termination of service.
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                "Price: ₱${(subscriptionPrice! / 100).toStringAsFixed(2)}",
+                                "Price: ₱\${(subscriptionPrice! / 100).toStringAsFixed(2)}",
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
